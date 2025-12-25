@@ -168,10 +168,4 @@ This will create `cctv-vehicle-analytics.zip` in the `dist/` directory containin
 
 ---
 
-This implementation meets the functional and non‑functional requirements described in the provided specification documents【684174910239958†L54-L90】【419576084099050†L147-L166】.  It provides a complete local environment for CCTV integration, vehicle analytics, event storage, dashboard visualisation, notifications and CSV export while clearly defining extension points for production‑grade models and hardware acceleration.# vehicle-analytics
-# vehicle-analytics
-# vehicle-analytics
-# vehicle-analytics
-# vehicle-analytics
-# vehicle-analytics
-# vehicle-analytics
+This implementation meets the functional and non‑functional requirements described in the provided specification documents【684174910239958†L54-L90】【419576084099050†L147-L166】.  It provides a complete local environment for CCTV integration, vehicle analytics, event storage, dashboard visualisation, notifications and CSV export while clearly defining extension points for production‑grade models and hardware acceleration.
