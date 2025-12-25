@@ -25,6 +25,12 @@ const Cameras = () => {
     fetchCameras();
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this camera?')) return;
+    await api.delete(`/cameras/${id}`);
+    fetchCameras();
+  };
+
   return (
     <div className="grid" style={{ gap: 16 }}>
       <div className="hero">
@@ -82,6 +88,7 @@ const Cameras = () => {
               <th>Name</th>
               <th>Gate</th>
               <th>RTSP URL</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -91,11 +98,14 @@ const Cameras = () => {
                 <td>{cam.name}</td>
                 <td>{cam.gate_id}</td>
                 <td className="muted">{cam.rtsp_url}</td>
+                <td>
+                  <Button variant="secondary" onClick={() => handleDelete(cam.id)}>Delete</Button>
+                </td>
               </tr>
             ))}
             {cameras.length === 0 && (
               <tr>
-                <td colSpan="4" className="muted">No cameras added yet.</td>
+                <td colSpan="5" className="muted">No cameras added yet.</td>
               </tr>
             )}
           </tbody>

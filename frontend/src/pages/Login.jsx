@@ -28,7 +28,7 @@ const Login = () => {
       <div className="hero shadow-strong">
         <div>
           <div style={{ fontSize: 13, color: 'var(--muted)' }}>Secure Access</div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>CCTV Vehicle Analytics</div>
+          <div style={{ fontSize: 22, fontWeight: 700 }}>Vehicle Analytics</div>
           <div style={{ fontSize: 14, color: 'var(--muted)' }}>Sign in to monitor cameras, ROI and events.</div>
         </div>
         <span className="pill success">Live</span>

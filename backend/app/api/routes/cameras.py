@@ -1,10 +1,15 @@
 """Camera CRUD API endpoints."""
 
+import os
+import time
+
+import cv2
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.core.security import decode_access_token
 from app.db import models
 from app.db.session import get_db
 from app.schemas import camera as schema
@@ -144,5 +149,57 @@ def mjpeg_preview(
             if not ok:
                 continue
             yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + jpeg.tobytes() + b"\r\n")
+
+    return StreamingResponse(gen(), media_type="multipart/x-mixed-replace; boundary=frame")
+
+
+@router.get("/{camera_id}/mjpeg_live")
+def mjpeg_live(
+    camera_id: int,
+    token: str,
+    db: Session = Depends(get_db),
+):
+    """Return an MJPEG stream from the camera's RTSP URL (auth via token query).
+
+    This is used by the dashboard live preview. Token is the same JWT returned
+    by /auth/login and is validated manually so that the browser can attach it
+    as a query param (since <img> tags cannot set Authorization headers).
+    """
+    username = decode_access_token(token)
+    if not username:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    camera = db.query(models.Camera).filter(models.Camera.id == camera_id).first()
+    if not camera:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    rtsp_url = camera.rtsp_url
+    sample_path = os.getenv("SAMPLE_VIDEO_PATH", "/sample_media/sample.mp4")
+
+    def gen():
+        backoff = 0.5
+        while True:
+            src = rtsp_url
+            cap = cv2.VideoCapture(src)
+            if not cap.isOpened():
+                # fallback to sample if RTSP not reachable
+                cap = cv2.VideoCapture(sample_path)
+            if not cap.isOpened():
+                time.sleep(backoff)
+                backoff = min(5.0, backoff * 1.5)
+                continue
+            backoff = 0.5
+            while True:
+                ok, frame = cap.read()
+                if not ok:
+                    break
+                ok, jpeg = cv2.imencode(".jpg", frame)
+                if not ok:
+                    continue
+                yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + jpeg.tobytes() + b"\r\n")
+            cap.release()
+            time.sleep(backoff)
+            backoff = min(5.0, backoff * 1.5)
 
     return StreamingResponse(gen(), media_type="multipart/x-mixed-replace; boundary=frame")

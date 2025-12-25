@@ -47,18 +47,18 @@ def init_data(db: Session) -> None:
     db.commit()
     db.refresh(gate)
     # Create camera
-    camera = db.query(models.Camera).filter(models.Camera.name == "Sample Camera").first()
+    camera = db.query(models.Camera).filter(models.Camera.name == "Office Camera").first()
     if not camera:
         # RTSP URL for sample stream provided by mediamtx
-        rtsp_url = "rtsp://mediamtx:8554/sample"
+        rtsp_url = "rtsp://krishva:krishva1234@192.168.1.2:554/stream1"
         camera = models.Camera(
-            name="Sample Camera",
+            name="Office Camera",
             gate_id=gate.id,
             rtsp_url=rtsp_url,
             is_active=True,
         )
         db.add(camera)
-        print("Seeded sample camera")
+        print("Seeded office camera")
     db.commit()
 
     # Create default ROI covering the static box in the sample video
@@ -75,7 +75,7 @@ def init_data(db: Session) -> None:
             coordinates=[[200, 150], [440, 330]],
         )
         db.add(roi)
-        print("Seeded default ROI for sample camera")
+        print("Seeded default ROI for office camera")
         db.commit()
 
 

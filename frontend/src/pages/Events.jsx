@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api/axios';
 import { Badge, Button, Card } from '../components/Primitives';
 import SnapshotModal from '../components/SnapshotModal';
+import Loader from '../components/Loader';
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -75,8 +76,13 @@ const Events = () => {
     if (filters.gate_id) params.gate_id = filters.gate_id;
     if (filters.vehicle_type) params.vehicle_type = filters.vehicle_type;
     if (filters.entry_exit) params.entry_exit = filters.entry_exit;
-    const res = await api.get('/events/', { params });
-    setEvents(res.data);
+    setLoading(true);
+    try {
+      const res = await api.get('/events/', { params });
+      setEvents(res.data);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchRules = async () => {
@@ -126,6 +132,7 @@ const Events = () => {
       </div>
 
       <Card title="All events" subtitle="Latest first">
+        {loading && <Loader size={32} />}
         <div className="grid two" style={{ marginBottom: 10 }}>
           <input
             type="datetime-local"

@@ -2,10 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
 import { Badge, Button, Card, SectionHeader, Stat } from '../components/Primitives';
+import Loader from '../components/Loader';
 
 const Dashboard = () => {
   const [events, setEvents] = useState([]);
   const [snapshotUrl, setSnapshotUrl] = useState('');
+  const [cameras, setCameras] = useState([]);
+  const [selectedCamera, setSelectedCamera] = useState(1);
   const [filters, setFilters] = useState({
     start_date: '',
     end_date: '',
@@ -13,6 +16,9 @@ const Dashboard = () => {
     vehicle_type: '',
     entry_exit: '',
   });
+  const [liveUrl, setLiveUrl] = useState(null);
+  const [liveError, setLiveError] = useState('');
+  const [liveLoading, setLiveLoading] = useState(false);
 
   const fetchEvents = async () => {
     const params = {};
@@ -31,9 +37,9 @@ const Dashboard = () => {
     return () => clearInterval(t);
   }, [filters]);
 
-  const fetchSnapshot = async () => {
+  const fetchSnapshot = async (camId = selectedCamera) => {
     try {
-      const res = await api.get('/cameras/1/snapshot', { responseType: 'blob' });
+      const res = await api.get(`/cameras/${camId}/snapshot`, { responseType: 'blob' });
       const url = URL.createObjectURL(res.data);
       setSnapshotUrl(url);
     } catch (err) {
@@ -43,9 +49,37 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchSnapshot();
-    const t = setInterval(fetchSnapshot, 8000);
+    const t = setInterval(() => fetchSnapshot(), 8000);
     return () => clearInterval(t);
+  }, [selectedCamera]);
+
+  // Load cameras and pick first as default
+  useEffect(() => {
+    const loadCameras = async () => {
+      try {
+        const res = await api.get('/cameras/');
+        setCameras(res.data || []);
+        if (res.data && res.data.length > 0) {
+          setSelectedCamera(res.data[0].id);
+        }
+      } catch (err) {
+        console.error('camera list error', err);
+      }
+    };
+    loadCameras();
   }, []);
+
+  // Build live URL with cache-busting and token; refresh query every few seconds
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLiveUrl(null);
+      return;
+    }
+    const base = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    setLiveLoading(true);
+    setLiveUrl(`${base}/cameras/${selectedCamera}/mjpeg_live?token=${token}`);
+  }, [selectedCamera]);
 
   const chartData = useMemo(() => {
     const counts = {};
@@ -90,6 +124,24 @@ const Dashboard = () => {
           <Button onClick={fetchEvents}>Refresh data</Button>
         </div>
       </div>
+
+      <Card title="Camera selection" subtitle="Choose which camera to preview">
+        <div className="grid two" style={{ gap: 12 }}>
+          <div>
+            <label>Camera</label>
+            <select value={selectedCamera} onChange={(e) => setSelectedCamera(Number(e.target.value))}>
+              {cameras.map((c) => (
+                <option key={c.id} value={c.id}>
+                  #{c.id} — {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="muted" style={{ alignSelf: 'flex-end' }}>
+            RTSP: {cameras.find((c) => c.id === selectedCamera)?.rtsp_url || '—'}
+          </div>
+        </div>
+      </Card>
 
       <Card title="Filters" subtitle="Server-side filtering for charts and stats">
         <div className="grid two" style={{ gap: 12 }}>
@@ -249,18 +301,55 @@ const Dashboard = () => {
         </div>
       </Card>
 
-      <Card title="Live preview" subtitle="Latest camera snapshot">
+      <Card title="Live preview" subtitle="Live MJPEG stream + periodic snapshot">
         <div className="flex gap-md items-center" style={{ marginBottom: 10 }}>
-          <Button variant="secondary" onClick={fetchSnapshot}>Refresh now</Button>
-          <div className="muted">Auto-refreshing every 8s from camera #1</div>
+          <Button variant="secondary" onClick={() => fetchSnapshot()}>Refresh snapshot</Button>
+          <div className="muted">Snapshot auto-refresh every 8s; MJPEG is continuous</div>
         </div>
-        {snapshotUrl ? (
+        <div className="grid two" style={{ gap: 12 }}>
           <div className="panel" style={{ padding: 8 }}>
-            <img src={snapshotUrl} alt="snapshot" style={{ width: '100%', borderRadius: 12 }} />
+            <div className="card-subtitle" style={{ marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Live stream</span>
+              <span className="pill" style={{ animation: 'pulseGlow 2s infinite' }}>Live</span>
+            </div>
+            {liveUrl ? (
+              <div className="panel" style={{ padding: 4, position: 'relative', minHeight: 220 }}>
+                {liveLoading && (
+                  <div className="loader-overlay">
+                    <Loader size={36} />
+                  </div>
+                )}
+                <img
+                  key={liveUrl}
+                  src={liveUrl}
+                  alt="live stream"
+                  style={{ width: '100%', borderRadius: 12 }}
+                  onError={() => {
+                    setLiveError('Unable to load stream. Check RTSP reachability and token.');
+                    setLiveLoading(false);
+                  }}
+                  onLoad={() => {
+                    setLiveError('');
+                    setLiveLoading(false);
+                  }}
+                />
+                {liveError && <div className="pill danger" style={{ marginTop: 6 }}>{liveError}</div>}
+              </div>
+            ) : (
+              <div className="muted">Login to view live stream.</div>
+            )}
           </div>
-        ) : (
-          <div className="muted">No snapshot yet. Click refresh.</div>
-        )}
+          <div className="panel" style={{ padding: 8 }}>
+            <div className="card-subtitle" style={{ marginBottom: 6 }}>Latest snapshot</div>
+            {snapshotUrl ? (
+              <div className="panel" style={{ padding: 4 }}>
+                <img src={snapshotUrl} alt="snapshot" style={{ width: '100%', borderRadius: 12 }} />
+              </div>
+            ) : (
+              <div className="muted">No snapshot yet. Click refresh.</div>
+            )}
+          </div>
+        </div>
       </Card>
     </div>
   );

@@ -16,10 +16,13 @@ const Navbar = () => {
     navigate('/login');
   };
   return (
-    <header className="panel" style={{ padding: '12px 16px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)' }}>
+    <header className="panel glow" style={{ padding: '12px 16px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)' }}>
       <div style={{ fontWeight: 700, letterSpacing: '0.03em', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ display: 'inline-flex', width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 10, background: 'linear-gradient(135deg, rgba(124,242,196,0.35), rgba(122,182,255,0.35))', border: '1px solid var(--border)' }}>CV</span>
-        CCTV Vehicle Analytics
+        <span style={{ display: 'inline-flex', width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 12, background: 'linear-gradient(135deg, rgba(124,242,196,0.5), rgba(122,182,255,0.4), rgba(255,157,225,0.35))', border: '1px solid var(--border)' }}>CV</span>
+        <div>
+          <div style={{ fontSize: 14, color: "var(--muted)" }}>Control Room</div>
+          <div>Vehicle Analytics</div>
+        </div>
       </div>
       <nav style={{ display: 'flex', gap: 10, flex: 1 }}>
         {links.map((link) => {
@@ -32,7 +35,7 @@ const Navbar = () => {
               style={{
                 borderColor: active ? 'rgba(124,242,196,0.6)' : 'var(--border)',
                 color: active ? 'var(--text)' : 'var(--muted)',
-                background: active ? 'rgba(124,242,196,0.12)' : 'rgba(255,255,255,0.04)',
+                background: active ? 'rgba(124,242,196,0.18)' : 'rgba(255,255,255,0.04)',
               }}
             >
               {link.label}
