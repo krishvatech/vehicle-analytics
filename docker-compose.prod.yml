@@ -1,0 +1,18 @@
+version: '3.8'
+
+# Placeholder for production override with TLS terminator/reverse proxy.
+# Example: use Caddy or Nginx in front of backend/worker/frontend and terminate TLS there.
+services:
+  reverse-proxy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/certs:/certs:ro    # place your certs here
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+# Configure backend/frontend to use internal network only and let proxy expose public ports.

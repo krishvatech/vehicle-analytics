@@ -1,0 +1,18 @@
+# Python / backend
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+
+# Environment / tooling
+.env
+.DS_Store
+dist/
+models/
+*.onnx
+.venv*
+.venv311/

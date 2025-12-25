@@ -1,0 +1,9 @@
+server:
+  protocols: [tcp]
+
+paths:
+  sample:
+    runOnDemand: |
+      ffmpeg -re -stream_loop -1 -i /sample_media/sample.mp4 \
+      -c copy -f rtsp rtsp://127.0.0.1:8554/sample
+    runOnDemandRestart: yes
