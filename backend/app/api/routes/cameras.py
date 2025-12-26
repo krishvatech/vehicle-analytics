@@ -4,6 +4,8 @@ import os
 import time
 
 import cv2
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.orm import Session
@@ -13,6 +15,7 @@ from app.core.security import decode_access_token
 from app.db import models
 from app.db.session import get_db
 from app.schemas import camera as schema
+from app.schemas import camera_roi as roi_schema
 
 
 router = APIRouter(prefix="/cameras", tags=["cameras"])
@@ -203,3 +206,54 @@ def mjpeg_live(
             backoff = min(5.0, backoff * 1.5)
 
     return StreamingResponse(gen(), media_type="multipart/x-mixed-replace; boundary=frame")
+
+
+@router.get("/{camera_id}/roi", response_model=roi_schema.CameraROIOut, response_model_by_alias=False)
+def get_camera_roi(
+    camera_id: int,
+    db: Session = Depends(get_db),
+    _: models.User = Depends(deps.get_current_user),
+):
+    roi = db.query(models.CameraROI).filter(models.CameraROI.camera_id == camera_id).first()
+    if not roi:
+        raise HTTPException(status_code=404, detail="ROI not found")
+    return roi
+
+
+@router.put("/{camera_id}/roi", response_model=roi_schema.CameraROIOut, response_model_by_alias=False)
+def upsert_camera_roi(
+    camera_id: int,
+    roi_in: roi_schema.CameraROIBase,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(deps.require_admin),
+):
+    if roi_in.coordinate_type != "normalized":
+        raise HTTPException(status_code=400, detail="Only normalized coordinates are supported")
+    if roi_in.x + roi_in.w > 1 or roi_in.y + roi_in.h > 1:
+        raise HTTPException(status_code=400, detail="ROI must fit within the normalized frame")
+    camera = db.query(models.Camera).filter(models.Camera.id == camera_id).first()
+    if not camera:
+        raise HTTPException(status_code=404, detail="Camera not found")
+
+    roi = db.query(models.CameraROI).filter(models.CameraROI.camera_id == camera_id).first()
+    if roi:
+        roi.roi_x = roi_in.x
+        roi.roi_y = roi_in.y
+        roi.roi_w = roi_in.w
+        roi.roi_h = roi_in.h
+        roi.updated_by_id = user.id
+        roi.updated_at = datetime.utcnow()
+    else:
+        roi = models.CameraROI(
+            camera_id=camera_id,
+            roi_x=roi_in.x,
+            roi_y=roi_in.y,
+            roi_w=roi_in.w,
+            roi_h=roi_in.h,
+            updated_by_id=user.id,
+            updated_at=datetime.utcnow(),
+        )
+        db.add(roi)
+    db.commit()
+    db.refresh(roi)
+    return roi

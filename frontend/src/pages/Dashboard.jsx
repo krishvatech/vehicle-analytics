@@ -19,6 +19,11 @@ const Dashboard = () => {
   const [liveUrl, setLiveUrl] = useState(null);
   const [liveError, setLiveError] = useState('');
   const [liveLoading, setLiveLoading] = useState(false);
+  const [videos, setVideos] = useState([]);
+  const [videosLoading, setVideosLoading] = useState(false);
+  const [videosError, setVideosError] = useState('');
+
+  const baseUrl = useMemo(() => import.meta.env.VITE_API_URL || 'http://localhost:8000', []);
 
   const fetchEvents = async () => {
     const params = {};
@@ -52,6 +57,23 @@ const Dashboard = () => {
     const t = setInterval(() => fetchSnapshot(), 8000);
     return () => clearInterval(t);
   }, [selectedCamera]);
+
+  useEffect(() => {
+    const loadVideos = async () => {
+      setVideosLoading(true);
+      setVideosError('');
+      try {
+        const res = await api.get('/videos/');
+        setVideos(res.data || []);
+      } catch (err) {
+        console.error('video list error', err);
+        setVideosError('Unable to load videos.');
+      } finally {
+        setVideosLoading(false);
+      }
+    };
+    loadVideos();
+  }, []);
 
   // Load cameras and pick first as default
   useEffect(() => {
@@ -349,6 +371,43 @@ const Dashboard = () => {
               <div className="muted">No snapshot yet. Click refresh.</div>
             )}
           </div>
+        </div>
+      </Card>
+
+      <Card title="Videos" subtitle="Uploaded clips">
+        <div className="grid two" style={{ gap: 12 }}>
+          {videosLoading && (
+            <div className="panel" style={{ padding: 16 }}>
+              <Loader size={32} />
+            </div>
+          )}
+          {!videosLoading && videosError && (
+            <div className="panel" style={{ padding: 16 }}>
+              <div className="pill danger">{videosError}</div>
+            </div>
+          )}
+          {!videosLoading && !videosError && videos.length === 0 && (
+            <div className="panel" style={{ padding: 16 }}>
+              <div className="muted">No videos uploaded yet.</div>
+            </div>
+          )}
+          {!videosLoading && !videosError && videos.map((video) => {
+            const token = localStorage.getItem('token');
+            const src = `${baseUrl}/videos/${video.id}/file?token=${token || ''}`;
+            return (
+              <div key={video.id} className="panel" style={{ padding: 8 }}>
+                <div className="card-subtitle" style={{ marginBottom: 6 }}>{video.title}</div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+                  {video.created_at ? new Date(video.created_at).toLocaleString() : '—'}
+                </div>
+                <div className="panel" style={{ padding: 4 }}>
+                  <video controls preload="metadata" style={{ width: '100%', borderRadius: 12 }}>
+                    <source src={src} type={video.mime_type} />
+                  </video>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </Card>
     </div>

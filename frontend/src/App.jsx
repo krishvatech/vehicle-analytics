@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Cameras from './pages/Cameras';
+import Videos from './pages/Videos';
 import ROISetup from './pages/ROISetup';
 import Events from './pages/Events';
 import Dashboard from './pages/Dashboard';
@@ -22,6 +23,10 @@ function App() {
         <Route
           path="/cameras"
           element={<ProtectedRoute element={<Cameras />} />}
+        />
+        <Route
+          path="/videos"
+          element={<ProtectedRoute element={<Videos />} />}
         />
         <Route
           path="/roi"

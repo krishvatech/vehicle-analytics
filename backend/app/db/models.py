@@ -128,6 +128,22 @@ class ROI(Base):
     camera = relationship("Camera", back_populates="rois")
 
 
+class CameraROI(Base):
+    __tablename__ = "camera_rois"
+
+    id = Column(Integer, primary_key=True, index=True)
+    camera_id = Column(Integer, ForeignKey("cameras.id"), unique=True, nullable=False)
+    roi_x = Column(Float, nullable=False)
+    roi_y = Column(Float, nullable=False)
+    roi_w = Column(Float, nullable=False)
+    roi_h = Column(Float, nullable=False)
+    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    camera = relationship("Camera")
+    updated_by = relationship("User")
+
+
 class Event(Base):
     __tablename__ = "events"
 
@@ -176,3 +192,19 @@ class NotificationRule(Base):
         if not self.recipients:
             return []
         return [r.strip() for r in self.recipients.split(",") if r.strip()]
+
+
+class Video(Base):
+    __tablename__ = "videos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    file_path = Column(String(500), nullable=False)
+    mime_type = Column(String(100), nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    status = Column(String(32), nullable=True)
+    uploaded_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    uploaded_by = relationship("User")

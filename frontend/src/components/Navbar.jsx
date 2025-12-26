@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 const links = [
   { to: '/', label: 'Dashboard' },
   { to: '/cameras', label: 'Cameras' },
+  { to: '/videos', label: 'Videos' },
   { to: '/roi', label: 'ROI Setup' },
   { to: '/events', label: 'Events' },
 ];

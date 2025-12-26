@@ -47,7 +47,7 @@ services:
       - ./infra/sample_media:/sample_media:ro
     environment:
       RTSP_PROTOCOLS: tcp
-    command: ["/mediamtx", "/mediamtx.yml"]
+    command: ["/mediamtx.yml"]
     ports:
       - "8554:8554"
 
@@ -61,6 +61,7 @@ services:
     volumes:
       - ./infra/sample_media:/sample_media:ro
       - ./models:/models:ro
+      - ./infra/uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -95,7 +96,10 @@ services:
         condition: service_started
     restart: unless-stopped
     command: >
-      /bin/sh -c "celery -A app.core.celery_app.celery_app worker --loglevel=info & python -m app.workers.launch_workers"
+      /bin/sh -c "python -m app.initial_data &&
+      python -m app.workers.launch_workers &&
+      celery -A app.core.celery_app.celery_app worker --loglevel=info"
+
 
   frontend:
     build:

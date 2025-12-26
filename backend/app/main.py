@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from app.api.routes import auth, cameras, rois, events, notifications, metrics
+from app.api.routes import auth, cameras, rois, events, notifications, metrics, videos
 from app.db import models
 from app.db.session import engine
 from app.core.config import get_settings
@@ -63,6 +63,7 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(auth.router)
     app.include_router(cameras.router)
+    app.include_router(videos.router)
     app.include_router(rois.router)
     app.include_router(events.router)
     app.include_router(notifications.router)

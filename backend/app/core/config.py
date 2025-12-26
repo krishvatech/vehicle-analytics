@@ -107,6 +107,10 @@ class Settings(BaseSettings):
     SMTP_PORT: int = Field(default=1025)
     SMTP_FROM: str = Field(default="no-reply@local.test")
 
+    # Video uploads
+    VIDEO_UPLOAD_DIR: str = Field(default="/app/uploads/videos")
+    VIDEO_MAX_SIZE_MB: int = Field(default=300)
+
 
 @lru_cache()
 def get_settings() -> Settings:
