@@ -147,6 +147,23 @@ def get_video(
     return video
 
 
+@router.delete("/{video_id}")
+def delete_video(
+    video_id: int,
+    db: Session = Depends(get_db),
+    _: models.User = Depends(deps.require_admin),
+):
+    video = db.query(models.Video).filter(models.Video.id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    file_path = video.file_path
+    db.delete(video)
+    db.commit()
+    if file_path and os.path.exists(file_path):
+        os.remove(file_path)
+    return {"detail": "Video deleted"}
+
+
 @router.get("/{video_id}/file")
 def get_video_file(
     video_id: int,

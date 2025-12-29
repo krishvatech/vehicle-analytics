@@ -9,6 +9,7 @@ const Videos = () => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState('');
 
   const baseUrl = useMemo(() => import.meta.env.VITE_API_URL || 'http://localhost:8000', []);
@@ -79,6 +80,21 @@ const Videos = () => {
     }
   };
 
+  const handleDelete = async (videoId) => {
+    if (!window.confirm('Delete this video?')) return;
+    setDeletingId(videoId);
+    setError('');
+    try {
+      await api.delete(`/videos/${videoId}`);
+      await loadVideos();
+    } catch (err) {
+      console.error('delete error', err);
+      setError('Failed to delete video.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="grid" style={{ gap: 16 }}>
       <div className="hero">
@@ -121,7 +137,16 @@ const Videos = () => {
             const src = `${baseUrl}/videos/${video.id}/file?token=${token || ''}`;
             return (
               <div key={video.id} className="panel" style={{ padding: 12, borderRadius: 16 }}>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>{video.title}</div>
+                <div className="flex justify-between items-start" style={{ gap: 12 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>{video.title}</div>
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleDelete(video.id)}
+                    disabled={deletingId === video.id}
+                  >
+                    {deletingId === video.id ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </div>
                 {video.description && <div className="muted" style={{ marginBottom: 6 }}>{video.description}</div>}
                 <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
                   {new Date(video.created_at).toLocaleString()} • {formatBytes(video.size_bytes)}
