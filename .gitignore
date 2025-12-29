@@ -16,3 +16,5 @@ models/
 *.onnx
 .venv*
 .venv311/
+infra/uploads/*
+!infra/uploads/.gitkeep

@@ -61,6 +61,7 @@ services:
     volumes:
       - ./infra/sample_media:/sample_media:ro
       - ./models:/models:ro
+      - ./infra/uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
