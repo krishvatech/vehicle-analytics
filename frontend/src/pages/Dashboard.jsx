@@ -19,7 +19,7 @@ const Dashboard = () => {
   const [liveUrl, setLiveUrl] = useState(null);
   const [liveError, setLiveError] = useState('');
   const [liveLoading, setLiveLoading] = useState(false);
-  const baseUrl = useMemo(() => import.meta.env.VITE_API_URL || 'http://localhost:8000', []);
+  const baseUrl = api.defaults.baseURL || '';
   const [videos, setVideos] = useState([]);
   const [videosLoading, setVideosLoading] = useState(false);
   const [videosError, setVideosError] = useState('');
@@ -97,9 +97,12 @@ const Dashboard = () => {
       setLiveUrl(null);
       return;
     }
-    const base = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    if (!baseUrl) {
+      setLiveUrl(null);
+      return;
+    }
     setLiveLoading(true);
-    setLiveUrl(`${base}/cameras/${selectedCamera}/mjpeg_live?token=${token}`);
+    setLiveUrl(`${baseUrl}/cameras/${selectedCamera}/mjpeg_live?token=${token}`);
   }, [selectedCamera]);
 
   const chartData = useMemo(() => {

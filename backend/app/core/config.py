@@ -13,7 +13,7 @@ expected to come from the environment and must never be hard coded.
 """
 
 from functools import lru_cache
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -60,8 +60,14 @@ class Settings(BaseSettings):
     API_V1_STR: str = Field(default="/api")
 
     # Security / Auth
-    SECRET_KEY: str = Field(default="change-me")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60 * 24)
+    SECRET_KEY: str = Field(
+        default="change-me",
+        validation_alias=AliasChoices("SECRET_KEY", "JWT_SECRET_KEY"),
+    )
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
+        default=60 * 24,
+        validation_alias=AliasChoices("ACCESS_TOKEN_EXPIRE_MINUTES", "JWT_ACCESS_TOKEN_EXPIRE_MINUTES"),
+    )
 
     # Database / Redis
     DATABASE_URL: str = Field(

@@ -61,6 +61,7 @@ services:
     volumes:
       - ./infra/sample_media:/sample_media:ro
       - ./models:/models:ro
+      - ./uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -86,6 +87,7 @@ services:
     volumes:
       - ./infra/sample_media:/sample_media:ro
       - ./models:/models:ro
+      - ./uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -95,7 +97,9 @@ services:
         condition: service_started
     restart: unless-stopped
     command: >
-      /bin/sh -c "celery -A app.core.celery_app.celery_app worker --loglevel=info & python -m app.workers.launch_workers"
+      /bin/sh -c "celery -A app.core.celery_app.celery_app worker --loglevel=info &
+                  python -m app.workers.launch_workers;
+                  wait"
 
   frontend:
     build:

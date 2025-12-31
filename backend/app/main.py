@@ -7,6 +7,8 @@ The application mounts a health check endpoint at ``/health`` and
 provides automatic OpenAPI documentation at ``/docs``.
 """
 
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -23,6 +25,7 @@ def create_app() -> FastAPI:
     """Construct and configure the FastAPI application."""
     app = FastAPI(title="CCTV Vehicle Analytics API")
     settings = get_settings()
+    os.makedirs(settings.VIDEO_UPLOAD_DIR, exist_ok=True)
 
     # Create database tables if they do not exist
     models.Base.metadata.create_all(bind=engine)

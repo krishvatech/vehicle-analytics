@@ -16,6 +16,7 @@ from app.schemas import camera as schema
 
 
 router = APIRouter(prefix="/cameras", tags=["cameras"])
+_fallback_logged: set[int] = set()
 
 
 @router.post("/", response_model=schema.CameraOut)
@@ -60,6 +61,28 @@ def get_camera(
     if not camera:
         raise HTTPException(status_code=404, detail="Camera not found")
     return camera
+
+
+@router.get("/{camera_id}/stream_health")
+def stream_health(
+    camera_id: int,
+    db: Session = Depends(get_db),
+    _: models.User = Depends(deps.get_current_user),
+):
+    """Return a quick RTSP/sample availability check for a camera."""
+    camera = db.query(models.Camera).filter(models.Camera.id == camera_id).first()
+    if not camera:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    rtsp_ok = False
+    cap = cv2.VideoCapture(camera.rtsp_url)
+    if cap.isOpened():
+        ok, _ = cap.read()
+        rtsp_ok = ok
+    cap.release()
+    sample_path = os.getenv("SAMPLE_VIDEO_PATH", "/sample_media/sample.mp4")
+    sample_ok = os.path.exists(sample_path)
+    source = "rtsp" if rtsp_ok else ("sample" if sample_ok else "none")
+    return {"camera_id": camera_id, "rtsp_ok": rtsp_ok, "sample_ok": sample_ok, "source": source}
 
 
 @router.put("/{camera_id}", response_model=schema.CameraOut)
@@ -176,6 +199,11 @@ def mjpeg_live(
         raise HTTPException(status_code=404, detail="Camera not found")
     rtsp_url = camera.rtsp_url
     sample_path = os.getenv("SAMPLE_VIDEO_PATH", "/sample_media/sample.mp4")
+    cap_probe = cv2.VideoCapture(rtsp_url)
+    rtsp_ok = cap_probe.isOpened()
+    cap_probe.release()
+    if not rtsp_ok and not os.path.exists(sample_path):
+        raise HTTPException(status_code=503, detail="RTSP unavailable and sample stream missing")
 
     def gen():
         backoff = 0.5
@@ -184,6 +212,9 @@ def mjpeg_live(
             cap = cv2.VideoCapture(src)
             if not cap.isOpened():
                 # fallback to sample if RTSP not reachable
+                if camera_id not in _fallback_logged:
+                    print(f"[cameras] RTSP unreachable for camera {camera_id}; using sample stream")
+                    _fallback_logged.add(camera_id)
                 cap = cv2.VideoCapture(sample_path)
             if not cap.isOpened():
                 time.sleep(backoff)

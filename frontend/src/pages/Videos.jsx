@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Button, Card } from '../components/Primitives';
 
@@ -12,7 +12,7 @@ const Videos = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState('');
 
-  const baseUrl = useMemo(() => import.meta.env.VITE_API_URL || 'http://localhost:8000', []);
+  const baseUrl = api.defaults.baseURL || '';
 
   const loadVideos = async () => {
     setLoading(true);
