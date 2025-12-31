@@ -27,3 +27,4 @@ celery_app.conf.update(
     result_serializer="json",
     accept_content=["json"],
 )
+celery_app.autodiscover_tasks(["app.workers"], force=True)

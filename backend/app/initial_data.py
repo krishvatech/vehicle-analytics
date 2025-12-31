@@ -2,11 +2,16 @@
 
 Running this module will insert a default admin user, a demo project,
 a gate and a camera into the database if they do not already exist.
-The seeded camera points to the sample video RTSP stream defined in
-``infra/mediamtx``. This script should be invoked from the Docker
-container entrypoint to ensure the DB is pre-populated.
+
+IMPORTANT:
+- The demo camera ("Office Camera") is seeded ONLY when there are NO cameras in DB.
+  This prevents it from auto-adding after you manually create cameras.
+
+This script is invoked from the Docker container entrypoint to ensure the DB
+is pre-populated on first run.
 """
 
+import os
 from sqlalchemy.orm import Session
 
 from app.core.security import get_password_hash
@@ -25,6 +30,7 @@ def init_data(db: Session) -> None:
         )
         db.add(admin)
         print("Seeded admin user with username=admin and password=admin")
+
     # Create demo project
     project = db.query(models.Project).filter(models.Project.name == "Demo Project").first()
     if not project:
@@ -33,6 +39,7 @@ def init_data(db: Session) -> None:
         print("Seeded demo project")
     db.commit()
     db.refresh(project)
+
     # Create gate
     gate = db.query(models.Gate).filter(models.Gate.name == "Main Gate").first()
     if not gate:
@@ -46,11 +53,19 @@ def init_data(db: Session) -> None:
         print("Seeded main gate")
     db.commit()
     db.refresh(gate)
-    # Create camera
+
+    # -----------------------------
+    # Seed demo camera ONLY on fresh DB
+    # -----------------------------
+    any_camera = db.query(models.Camera.id).first()  # None if no cameras exist
     camera = db.query(models.Camera).filter(models.Camera.name == "Office Camera").first()
-    if not camera:
-        # RTSP URL for sample stream provided by mediamtx
-        rtsp_url = "rtsp://krishva:krishva1234@192.168.1.2:554/stream1"
+
+    # If there are no cameras at all, seed the demo camera
+    if not any_camera and not camera:
+        # Default points to mediamtx RTSP stream inside docker network.
+        # Override by setting DEMO_CAMERA_RTSP_URL in .env if needed.
+        rtsp_url = os.getenv("DEMO_CAMERA_RTSP_URL", "rtsp://mediamtx:8554/stream1")
+
         camera = models.Camera(
             name="Office Camera",
             gate_id=gate.id,
@@ -58,25 +73,29 @@ def init_data(db: Session) -> None:
             is_active=True,
         )
         db.add(camera)
-        print("Seeded office camera")
-    db.commit()
-
-    # Create default ROI covering the static box in the sample video
-    existing_roi = (
-        db.query(models.ROI)
-        .filter(models.ROI.gate_id == gate.id, models.ROI.camera_id == camera.id)
-        .first()
-    )
-    if not existing_roi:
-        roi = models.ROI(
-            gate_id=gate.id,
-            camera_id=camera.id,
-            shape="rectangle",
-            coordinates=[[200, 150], [440, 330]],
-        )
-        db.add(roi)
-        print("Seeded default ROI for office camera")
         db.commit()
+        db.refresh(camera)
+        print("Seeded office camera")
+    else:
+        db.commit()
+
+    # Seed default ROI only if the demo camera exists
+    if camera:
+        existing_roi = (
+            db.query(models.ROI)
+            .filter(models.ROI.gate_id == gate.id, models.ROI.camera_id == camera.id)
+            .first()
+        )
+        if not existing_roi:
+            roi = models.ROI(
+                gate_id=gate.id,
+                camera_id=camera.id,
+                shape="rectangle",
+                coordinates=[[200, 150], [440, 330]],
+            )
+            db.add(roi)
+            print("Seeded default ROI for office camera")
+            db.commit()
 
 
 def main() -> None:

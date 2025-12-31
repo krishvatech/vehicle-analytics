@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   db:
@@ -97,9 +97,9 @@ services:
         condition: service_started
     restart: unless-stopped
     command: >
-      /bin/sh -c "celery -A app.core.celery_app.celery_app worker --loglevel=info &
-                  python -m app.workers.launch_workers;
-                  wait"
+        /bin/sh -c "celery -A app.core.celery_app.celery_app worker --loglevel=info -Q streams,notifications,celery &
+                    python -m app.workers.launch_workers;
+                    wait"
 
   frontend:
     build:
