@@ -64,7 +64,7 @@ def init_data(db: Session) -> None:
     if not any_camera and not camera:
         # Default points to mediamtx RTSP stream inside docker network.
         # Override by setting DEMO_CAMERA_RTSP_URL in .env if needed.
-        rtsp_url = os.getenv("DEMO_CAMERA_RTSP_URL", "rtsp://mediamtx:8554/stream1")
+        rtsp_url = f"file://{os.getenv('SAMPLE_VIDEO_PATH', '/sample_media/sample.mp4')}"
 
         camera = models.Camera(
             name="Office Camera",
